@@ -1,19 +1,19 @@
 import { readFile } from 'fs';
-
+import { parse } from 'yaml'
 function fetchGoogleCalendar(): void {
-  readFile('./slack_web_openapi_v2.json', function(err, data) {
+  readFile('./google-calendar.yaml', function(err, data) {
     if (err) {
       throw err;
     }
     let openApiSpec;
     try {
-      openApiSpec = JSON.parse(data.toString());
+      openApiSpec = parse(data.toString());
     } catch (parseErr) {
-      console.error('Failed to parse JSON:', parseErr.message);
+      console.error('Failed to parse YAML:', parseErr.message);
       return;
     }
     if (!openApiSpec.paths) {
-      console.error('No "paths" property found in JSON.');
+      console.error('No "paths" property found in YAML.');
       return;
     }
     console.log(Object.keys(openApiSpec.paths));
