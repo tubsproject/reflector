@@ -67,7 +67,7 @@ export class SlackClient extends EventEmitter {
   }
 
   async create(EXPRESS_FULL_URL: string): Promise<void> {
-    this.app.command('/tubs-connect', async ({ command, ack }) => {
+    this.app.command('/tubs-connect', async ({ command, ack }) => {;
       const uuid = command.user_id;
       const nonce = randomBytes(16).toString('hex');
       this.logins[nonce] = uuid;
