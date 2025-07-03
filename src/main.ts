@@ -16,7 +16,9 @@ function fetchGoogleCalendar(): void {
       console.error('No "paths" property found in YAML.');
       return;
     }
-    console.log(Object.keys(openApiSpec.paths));
+    console.log(openApiSpec.paths['/users/me/calendarList']?.get?.responses?.['200']?.content?.['application/json']?.schema);
+    console.log(Object.keys(openApiSpec.components?.schemas?.['CalendarList']?.properties));
+    console.log(Object.keys(openApiSpec.components?.schemas?.['CalendarListEntry']?.properties));
   });
 }
 // ...
