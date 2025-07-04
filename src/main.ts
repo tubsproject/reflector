@@ -36,51 +36,65 @@ function resolveComponents(spec: any): any {
   return spec;
 }
 
-function createSqlTable(specFile: string, endPoint: string, rowsFrom: string): void {
-  readFile(specFile, function(err, data) {
-    if (err) {
-      throw err;
-    }
-    let openApiSpec;
-    try {
-      openApiSpec = parse(data.toString());
-    } catch (parseErr) {
-      console.error('Failed to parse YAML:', parseErr.message);
-      return;
-    }
-    if (!openApiSpec.paths) {
-      console.error('No "paths" property found in YAML.');
-      return;
-    }
-    openApiSpec = resolveComponents(openApiSpec);
-    console.log(`Resolved components in OpenAPI spec.`);
-    // console.log(JSON.stringify(openApiSpec, null, 2));
-    const schema = openApiSpec.paths[endPoint]?.get?.responses?.['200']?.content?.['application/json']?.schema;
-    // console.log(`Schema for ${endPoint}:`, JSON.stringify(schema, null, 2));
-    const whatWeWant = schema?.properties?.[rowsFrom].items?.properties;
-    // console.log(`What we want:`, JSON.stringify(whatWeWant, null, 2));
-    const rowSpecs = (whatWeWant ? Object.entries(whatWeWant).map(([key, value]) => {
-      const type = (value as { type: string }).type;
-      if (type === 'string') {
-        return `${key} TEXT,`;
-      } else if (type === 'integer') {
-        return `${key} INTEGER,`;
-      } else if (type === 'boolean') {
-        return `${key} BOOLEAN,`;
-      } else return '';
-    }) : []);
-    const createTableQuery = `
+function getSpec(specFile: string): Promise<any> {
+  return new Promise((resolve) => {
+    readFile(specFile, function(err, data) {
+      if (err) {
+        throw err;
+      }
+      let openApiSpec;
+      try {
+        openApiSpec = parse(data.toString());
+      } catch (parseErr) {
+        console.error('Failed to parse YAML:', parseErr.message);
+        return;
+      }
+      if (!openApiSpec.paths) {
+        console.error('No "paths" property found in YAML.');
+        return;
+      }
+      openApiSpec = resolveComponents(openApiSpec);
+      console.log(`Resolved components in OpenAPI spec.`);
+      resolve(openApiSpec);
+    });
+  })
+}
+
+function createSqlTable(openApiSpec: any, endPoint: string, rowsFrom: string): void {
+  const schema = openApiSpec.paths[endPoint]?.get?.responses?.['200']?.content?.['application/json']?.schema;
+  // console.log(`Schema for ${endPoint}:`, JSON.stringify(schema, null, 2));
+  const whatWeWant = schema?.properties?.[rowsFrom].items?.properties;
+  // console.log(`What we want:`, JSON.stringify(whatWeWant, null, 2));
+  const rowSpecs = (whatWeWant ? Object.entries(whatWeWant).map(([key, value]) => {
+    const type = (value as { type: string }).type;
+    if (type === 'string') {
+      return `${key} TEXT,`;
+    } else if (type === 'integer') {
+      return `${key} INTEGER,`;
+    } else if (type === 'boolean') {
+      return `${key} BOOLEAN,`;
+    } else return '';
+  }) : []);
+  const createTableQuery = `
 CREATE TABLE data(
   ${rowSpecs.join('\n  ')}
 ) STRICT
-    `;
-    console.log(createTableQuery);
-    // Execute SQL statements from strings.
-    // const database = new sqlite.Database(':memory:');
-    // database.serialize(() => {
-    //   database.run(createTableQuery);
-    // });
+  `;
+  console.log(createTableQuery);
+  // Execute SQL statements from strings.
+  // const database = new sqlite.Database(':memory:');
+  // database.serialize(() => {
+  //   database.run(createTableQuery);
+  // });
+}
+
+async function createCollections(specFile: string): Promise<void> {
+  const openApiSpec = await getSpec(specFile);
+  Object.keys(openApiSpec.collections).forEach((collectionName) => {
+    console.log(`Creating collection: ${collectionName}`);
+    createSqlTable(openApiSpec, openApiSpec.collections[collectionName].get.path, openApiSpec.collections[collectionName].get.field);
   });
 }
+
 // ...
-createSqlTable('./google-calendar.yaml', '/users/me/calendarList', 'items');
+await createCollections('./google-calendar-overlayed-with-collections.yaml');

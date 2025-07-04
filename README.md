@@ -1,56 +1,14 @@
-# MySQL Schema Codegen
+# OpenAPI Collections
 
-Main goal of this generator is to provide database structure file almost identical you usually generate with:
-- PHPMyAdmin (Export structure only, SQL syntax)
-- Adminer
-- `mysqldump` function
+Access to data collections is one important functionality of many APIs. Sync engines require quite some boilerplate to keep an up-to-date local copy of a collection that the API exposes.
 
-[MySQL documentation](https://dev.mysql.com/doc/)
+To make this easier, we introduce a new field in OpenAPI specs, apart from `paths` and `components`, named `collections`.
 
-## Requirements
-- MySQL Server ^5.7.8 (`JSON` column type added)
+Whereas existing use of OpenAPI is mostly syntactical and human-readable (it specifies the schemas of API endpoints but the information on how to use them is only in the human-readable descriptions), OpenAPI Collections aim to provide all the machine-readable information needed by a sync engine.
 
-## Openapi Data Type to MySQL Data Type mapping
+A collection specifies details about a collection of data items that is available through the API in question,
+namely how to fetch the entire collection, how to add/update/remove an item in the collection, which merge type to use in case of conflicts, etc.
 
-| Openapi Data Type | Openapi Data Format | Dependent properties | MySQL Data Types | Default MySQL Data Type |
-| --- | --- | --- | --- | --- |
-| `integer` | `int32` | `minimum` / `maximum` / `minimumExclusive` / `maximumExclusive` | `TINYINT` / `SMALLINT` / `MEDIUMINT`/ `INT` / `BIGINT` | `INT` |
-| `integer` | `int64` | `minimum` / `maximum` / `minimumExclusive` / `maximumExclusive` | `TINYINT` / `SMALLINT` / `MEDIUMINT` / `INT` / `BIGINT` | `BIGINT` |
-| `boolean` | | | `TINYINT` | `TINYINT` |
-| `number` | `float` | | `DECIMAL` | `DECIMAL` |
-| `number` | `double` | | `DECIMAL` | `DECIMAL` |
-| `string` | | `minLength` / `maxLength` | `CHAR` / `VARCHAR` / `TEXT` / `MEDIUMTEXT` / `LONGTEXT` | `TEXT` |
-| `string` | `byte` |  | `TEXT` | `TEXT` |
-| `string` | `binary` |  | `MEDIUMBLOB` | `MEDIUMBLOB` |
-| `file` | |  | `MEDIUMBLOB` | `MEDIUMBLOB` |
-| `string` | `date` | | `DATE` | `DATE` |
-| `string` | `date-time` | | `DATETIME` | `DATETIME` |
-| `string` | `enum` | | `ENUM` | `ENUM` |
-| `array` | | | `JSON` | `JSON` |
-| `object` | | | `JSON` | `JSON` |
-| `\Model\User` (referenced definition) | | | `TEXT` | `TEXT` |
+For now, this first proof-of-concept only specifies which path retrieves the full collection, and which field in the response contains the retrieved items.
 
-## How to use
-
-Produced file(`mysql_schema.sql`) contains every table definition. Current implementation doesn't drop or modify existed tables, if you want rewrite whole schema make sure they're not presented.
-
-### PHPMyAdmin
-
-1. Choose **Import** tab from the home screen
-2. In section **File to import** click to **Choose File** and find generated `mysql_schema.sql`
-3. Make sure **Format** selector set to **SQL**
-4. Push **Go** button
-
-### Adminer
-
-1. Click **Import** link in left sidebar
-2. In **File upload** fieldset click to **Choose Files** and find generated `mysql_schema.sql`
-3. Push **Execute** button
-
-### Prepared SQL queries
-
-[Model folder](./Model) contains SQL queries(`SELECT *`,  `SELECT`, `INSERT`, `UPDATE`,  `DELETE`) usually suggested by `PHPMyAdmin` when you hit `SQL` tab. They are absolutely useless without adaptation to your needs. Copy-paste them then edit.
-
-Important! Some of SQLs(`INSERT`/`UPDATE`) contains question marks(`?`) which are parameter placeholders. You need to bind values to these params to execute query.
-
-If your MySQL driver doesn't support named parameters(`PHP PDO` supports while `PHP mysqli` doesn't) you need to make sure that `namedParametersEnabled` generator option is disabled.
+This work is [sponsored by NLNet](https://nlnet.nl/project/TUBS/)
