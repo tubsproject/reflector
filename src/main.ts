@@ -54,9 +54,11 @@ function createSqlTable(specFile: string, endPoint: string, rowsFrom: string): v
     }
     openApiSpec = resolveComponents(openApiSpec);
     console.log(`Resolved components in OpenAPI spec.`);
-    console.log(JSON.stringify(openApiSpec, null, 2));
+    // console.log(JSON.stringify(openApiSpec, null, 2));
     const schema = openApiSpec.paths[endPoint]?.get?.responses?.['200']?.content?.['application/json']?.schema;
-    const whatWeWant = schema?.properties?.[rowsFrom].items;
+    // console.log(`Schema for ${endPoint}:`, JSON.stringify(schema, null, 2));
+    const whatWeWant = schema?.properties?.[rowsFrom].items?.properties;
+    // console.log(`What we want:`, JSON.stringify(whatWeWant, null, 2));
     const rowSpecs = (whatWeWant ? Object.entries(whatWeWant).map(([key, value]) => {
       const type = (value as { type: string }).type;
       if (type === 'string') {
@@ -81,23 +83,4 @@ CREATE TABLE data(
   });
 }
 // ...
-const spec = {
-  a: { $ref: '#/components/schemas/Example' },
-  components: {
-    schemas: {
-      Example: {
-        type: 'object',
-        properties: {
-          id: { type: 'string' },
-          name: { type: 'string' },
-        },
-      },
-    },
-  },
-};
-
-// Example usage of resolveComponents
-const resolvedSpec = resolveComponents(spec );
-console.log('Resolved Spec:', JSON.stringify(resolvedSpec, null, 2));
-void createSqlTable
-// createSqlTable('./google-calendar.yaml', '/users/me/calendarList', 'items');
+createSqlTable('./google-calendar.yaml', '/users/me/calendarList', 'items');
